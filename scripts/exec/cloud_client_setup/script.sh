@@ -1,33 +1,33 @@
 #!/bin/bash
 # Equivalent of the legacy `track_scripts/setup-cloud-client`.
+#
+# Never exit non-zero: an exec failure aborts sandbox creation for the whole
+# lab, so problems here are reported, not fatal.
 
 set -uo pipefail
 
 # ---------------------------------------------------------------------------
-# Guard the positional credential reference.
+# Report the positional credential reference.
 #
 # sandbox.hcl reads credentials as `resource.aws_account.example.user.0.*`.
 # Instruqt documents name-keyed access (`user.student`) but the CLI rejects it -
 # `user` is a plain list, so the reference is positional and would silently
 # repoint if a user block were added above `student`.
 #
-# INSTRUQT_RESOLVED_USER carries whatever `user.0` actually resolved to, so a
-# reordering fails here, loudly, instead of handing out the wrong credentials.
+# INSTRUQT_RESOLVED_USER carries whatever `user.0` resolved to. It is the
+# generated IAM username, NOT the HCL block label, so it is logged for
+# traceability rather than asserted against the label.
 # ---------------------------------------------------------------------------
-INTENDED_USER="student"
-
-if [ -n "${INSTRUQT_RESOLVED_USER:-}" ] && [ "$INSTRUQT_RESOLVED_USER" != "$INTENDED_USER" ]; then
-  echo "FATAL: sandbox.hcl 'user.0' resolves to '${INSTRUQT_RESOLVED_USER}', expected '${INTENDED_USER}'." >&2
-  echo "       A user block was probably added above 'student'; the credentials" >&2
-  echo "       injected into the containers are not the ones this lab intends." >&2
-  exit 1
-fi
+echo "sandbox.hcl 'user.0' -> IAM user: '${INSTRUQT_RESOLVED_USER:-<unset>}'"
 
 # Region comes from AWS_DEFAULT_REGION on the container; the default VPC is
 # what `aws ec2 run-instances` needs in order to launch without a subnet id.
-aws configure set region "${AWS_DEFAULT_REGION:-eu-west-2}" --profile default
+aws configure set region "${AWS_DEFAULT_REGION:-eu-west-2}" --profile default || true
 
 # Idempotent: fails harmlessly if a default VPC already exists.
 aws ec2 create-default-vpc || true
 
+# Confirms which identity the injected credentials actually belong to.
 aws sts get-caller-identity || true
+
+exit 0

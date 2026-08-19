@@ -79,8 +79,8 @@ into a `local` all fail as well, so the positional index is the only form that
 works today.
 
 The hazard is that adding a `user` block *above* `student` would silently
-repoint every credential in the file. To keep that from being silent,
-`exec.cloud_client_setup` receives the resolved username and asserts it:
+repoint every credential in the file. `exec.cloud_client_setup` receives the
+resolved value and logs it:
 
 ```hcl
 environment = {
@@ -88,7 +88,12 @@ environment = {
 }
 ```
 
-If it ever stops resolving to `student`, the lab fails at startup with an
-explicit message instead of handing learners the wrong credentials. Revisit
-this if a later CLI release makes name-keyed access work.
+Note this is the **generated IAM username, not the HCL block label** — they are
+not the same string. An earlier version of this script asserted the two matched
+and hard-failed when they did not, which aborted sandbox creation for the whole
+lab. Exec failures are fatal to the sandbox, so the setup scripts now only
+report and always `exit 0`. The script also runs `aws sts get-caller-identity`,
+so the identity actually behind the injected credentials is visible in the lab
+logs.
 
+Revisit this if a later CLI release makes name-keyed access work.
