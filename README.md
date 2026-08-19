@@ -31,6 +31,7 @@ container**.
 | `02-*/check-cloud-client`, `solve-cloud-client` | `scripts/task/delete_ec2/{check,solve}.sh` |
 | `fail-message '...'` in check scripts | `failure_message` on the `check` block; scripts just exit non-zero |
 | `jq` parsing of `describe-instances` | AWS CLI `--query` (JMESPath) — no extra dependency |
+| hardcoded `ami-01685d240b8fbbfeb` | AMI resolved at runtime from a public SSM parameter |
 | `"Test"` tab on `cloud-client:8501` | dropped — port 8501 was never exposed in `config.yml` |
 
 ## Validate
@@ -38,3 +39,22 @@ container**.
 ```bash
 instruqt lab validate
 ```
+
+## Notes
+
+### AMI selection
+
+The legacy track hardcoded `ami-01685d240b8fbbfeb`, which is specific to
+`eu-west-2` and goes stale whenever the image is deregistered. Both the
+instructions and `scripts/task/create_ec2/solve.sh` now resolve the id at
+runtime from the public SSM parameter:
+
+```
+/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+```
+
+Ubuntu rather than Amazon Linux 2023 because this lab pins `t2.nano`. The `t2`
+family is Xen-based, and AL2023 only supports Nitro instances — the obvious
+`ami-amazon-linux-latest` parameter would resolve fine and then fail to launch.
+
+This requires `ssm` in the `aws_account` services list, which is why it is there.

@@ -11,10 +11,20 @@ access keys for the account.
 
 ## Create the instance
 
-Use the **Cloud CLI** terminal to launch a `t2.nano` EC2 instance:
+First, look up an AMI to boot from. Hardcoding an image id is a trap: ids differ
+per region and images get deregistered over time. AWS publishes the current ones
+as **public SSM parameters**, so ask for the latest Ubuntu 22.04 image instead:
 
 ```
-aws ec2 run-instances --image-id ami-01685d240b8fbbfeb --instance-type t2.nano
+AMI_ID=$(aws ssm get-parameters   --names /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id   --query 'Parameters[0].Value' --output text)
+
+echo $AMI_ID
+```
+
+Now launch a `t2.nano` instance from it:
+
+```
+aws ec2 run-instances --image-id $AMI_ID --instance-type t2.nano
 ```
 
 Confirm it came up:

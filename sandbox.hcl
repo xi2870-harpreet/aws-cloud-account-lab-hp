@@ -20,6 +20,9 @@ resource "aws_account" "example" {
     "s3",
     "iam",
     "bedrock",
+    # Required to resolve the AMI id from a public SSM parameter at runtime
+    # instead of hardcoding one.
+    "ssm",
   ]
 
   tags = {
