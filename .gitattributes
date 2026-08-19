@@ -1,0 +1,5 @@
+# Lab scripts execute inside Linux containers - CRLF would break the shebang.
+* text=auto eol=lf
+*.sh  text eol=lf
+*.hcl text eol=lf
+*.md  text eol=lf
