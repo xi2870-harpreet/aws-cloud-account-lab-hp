@@ -19,7 +19,7 @@ resource "layout" "default" {
 
     tab "aws_console" {
       title  = "AWS Console (Browser)"
-      target = resource.virtual_browser.aws_console
+      target = resource.external_website.aws_console
     }
 
     tab "workstation" {
@@ -55,7 +55,15 @@ resource "layout" "console_only" {
 
     tab "aws_console" {
       title  = "AWS Console (Browser)"
-      target = resource.virtual_browser.aws_console
+      target = resource.external_website.aws_console
+    }
+
+    # The legacy challenge exposed only the console tab, which left no way to
+    # finish the chapter if the console was unavailable. The instructions offer
+    # a CLI alternative, so give it somewhere to run.
+    tab "cloud_cli" {
+      title  = "Cloud CLI"
+      target = resource.terminal.cloud_cli
     }
   }
 

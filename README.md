@@ -23,7 +23,7 @@ container**.
 | `virtualmachines: ubuntu` (ubuntu-2404-noble, 8 GB, 2 cpu) | `resource "container" "workstation"` — `ubuntu:24.04`, 2 GB, 2 cpu |
 | `containers: cloud-client` (`gcr.io/instruqt/cloud-client`, port 80) | `resource "container" "cloud_client"` — `amazon/aws-cli:2.17.0` |
 | "AWS Console" service tab on cloud-client:80 | `resource "cloud_credentials" "aws"` (native) |
-| `virtualbrowsers: vbt` | `resource "virtual_browser" "aws_console"` |
+| `virtualbrowsers: vbt` | `resource "external_website" "aws_console"` (opens in a new window) |
 | `aws_accounts: example` | `resource "aws_account" "example"` with a `user "student"` block |
 | `track_scripts/setup-cloud-client` | `resource "exec" "cloud_client_setup"` |
 | `track_scripts/setup-ubuntu` (fully commented out) | `resource "exec" "workstation_setup"` — installs AWS CLI; heavier tools kept commented |
@@ -97,3 +97,19 @@ so the identity actually behind the injected credentials is visible in the lab
 logs.
 
 Revisit this if a later CLI release makes name-keyed access work.
+
+### `virtual_browser` cannot be a layout tab
+
+`instruqt lab validate` accepts a `virtual_browser` as a layout tab `target`,
+but the running lab **silently drops the tab** — it simply never appears. The
+layout reference's tab-target table bears this out: it lists `terminal`,
+`service`, `editor`, `external_website`, `note`, and `cloud_credentials`, and
+does not include `virtual_browser`.
+
+This was caught by playing the lab, not by validation. The AWS console tab is
+now an `external_website` with `open_in_new_window = true`, since the AWS
+sign-in page refuses to render in an iframe.
+
+Chapter 2 also gained a Cloud CLI terminal. The legacy challenge exposed only
+the console tab, which left no in-lab way to finish it if the console was
+unavailable — and the instructions already offer a CLI alternative.
