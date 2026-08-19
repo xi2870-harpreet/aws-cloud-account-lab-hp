@@ -30,6 +30,11 @@ resource "aws_account" "example" {
     Purpose     = "AWS Cloud Account Copy"
   }
 
+  # NOTE: credentials are referenced elsewhere as `user.0`, positionally.
+  # Name-keyed access (`user.student`) is documented by Instruqt but rejected by
+  # the CLI - `user` is a plain list. Adding a user block ABOVE this one would
+  # silently repoint every credential in this file, so keep `student` first.
+  # `exec.cloud_client_setup` asserts this at startup.
   user "student" {
     managed_policies = [
       "arn:aws:iam::aws:policy/AdministratorAccess",
@@ -109,8 +114,14 @@ resource "container" "workstation" {
 # Setup - equivalent of the legacy `track_scripts/setup-cloud-client`
 # ---------------------------------------------------------------------------
 resource "exec" "cloud_client_setup" {
-  target  = resource.container.cloud_client
-  script  = "scripts/exec/cloud_client_setup/script.sh"
+  target = resource.container.cloud_client
+  script = "scripts/exec/cloud_client_setup/script.sh"
+
+  # Lets the script verify that `user.0` still resolves to the intended user.
+  environment = {
+    INSTRUQT_RESOLVED_USER = resource.aws_account.example.user.0.username
+  }
+
   timeout = "300s"
 }
 

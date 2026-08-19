@@ -58,3 +58,37 @@ family is Xen-based, and AL2023 only supports Nitro instances — the obvious
 `ami-amazon-linux-latest` parameter would resolve fine and then fail to launch.
 
 This requires `ssm` in the `aws_account` services list, which is why it is there.
+
+### Credential references are positional
+
+`sandbox.hcl` reads the sandbox credentials as:
+
+```hcl
+resource.aws_account.example.user.0.access_key_id
+```
+
+Instruqt's reference docs show name-keyed access (`user.student.access_key_id`)
+in every example, but the CLI rejects it — `user` is a plain list:
+
+```
+resource contains invalid interpolated values: invalid list index: "student"
+```
+
+`user["student"]`, `for` expressions over the user list, and aliasing a user
+into a `local` all fail as well, so the positional index is the only form that
+works today.
+
+The hazard is that adding a `user` block *above* `student` would silently
+repoint every credential in the file. To keep that from being silent,
+`exec.cloud_client_setup` receives the resolved username and asserts it:
+
+```hcl
+environment = {
+  INSTRUQT_RESOLVED_USER = resource.aws_account.example.user.0.username
+}
+```
+
+If it ever stops resolving to `student`, the lab fails at startup with an
+explicit message instead of handing learners the wrong credentials. Revisit
+this if a later CLI release makes name-keyed access work.
+
